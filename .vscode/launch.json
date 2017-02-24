@@ -1,13 +1,13 @@
 {
     "version": "0.2.0",
     "configurations": [
-        {
+       {
             "name": ".NET Core Launch (console)",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceRoot}/bin/Debug/<target-framework>/<project-name.dll>",
-            "args": [],
+            "program": "${workspaceRoot}/bin/Debug/netcoreapp1.1/Cloudflare-cloudbleed-checker.dll",
+            "args": ["BrowserHistory.json", "sorted_unique_cf.txt"],
             "cwd": "${workspaceRoot}",
             "stopAtEntry": false,
             "externalConsole": false

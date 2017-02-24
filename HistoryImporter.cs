@@ -12,6 +12,7 @@ public class Importer
 
     public History GetCollectionOfDomains()
     {
+        var p = Directory.GetCurrentDirectory();
         using (StreamReader file = File.OpenText(_filePath))
         {
             JsonSerializer serializer = new JsonSerializer();

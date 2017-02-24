@@ -1,34 +1,61 @@
 ﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace ConsoleApplication
 {
     public class Program
     {
+        public const string UrlRegex = @"^((http[s]?|ftp):\/)?\/?([^:\/\s]+)((\/\w+)*\/)([\w\-\.]+[^#?\s]+)(.*)?(#[\w\-]+)?$";
         public static void Main(string[] args)
         {
-            var importer = new Importer("BrowserHistory.json");
+            Console.WriteLine("Preparing data...");
+            var importer = new Importer(args[0]);
             var history = importer.GetCollectionOfDomains();
-
-            using (var reader = new StreamReader(File.Open("sorted_unique_cf.txt", FileMode.Open)))
+            var checkedDomains = new ConcurrentDictionary<string, byte>();
             using (var writer = new StreamWriter(File.Open("result.txt", FileMode.Create)))
             {
-                int i = 0;
-                while (!reader.EndOfStream)
-                {
-                    var line = reader.ReadLine();
+                var orderedLines = new ConcurrentDictionary<string, byte>();
 
-                    if (history.BrowserHistory.Any(x =>
-                    {
-                        var url = new Uri(x.url);
-                        return url.Host == line;
-                    }))
-                    {
-                        writer.WriteLine($"Address {line}");
-                    }
-                    ProgressBar(i, 4288853);
+                var lines = File.ReadLines(args[1]).ToArray();
+                int k = 0;
+                foreach (var l in lines)
+                {
+                    orderedLines.TryAdd(l, 0);
+                    if (++k % 10000 == 0)
+                        ProgressBar(k, lines.Length);
                 }
+                Console.WriteLine();
+                Console.WriteLine("Data prepared. Starting Processing.");
+                int i = 0;
+                Parallel.ForEach<HistoryElement, int>(history.BrowserHistory, () => 0, (url, loop, subtotal) =>
+                 {
+                     subtotal++;
+                     var match = Regex.Match(url.url, UrlRegex);
+                     var host = match.Groups[3].Value;
+                     if (checkedDomains.ContainsKey(host))
+                     {
+                         return subtotal;
+                     }
+
+                     if (!String.IsNullOrWhiteSpace(host)
+                      && orderedLines.ContainsKey(host))
+                     {
+                         writer.WriteLine($"Address {host}");
+                     }
+                     checkedDomains.TryAdd(host, 0);
+                     return subtotal;
+                 }, (finalResult) =>
+                 {
+                     Interlocked.Add(ref i, finalResult);
+                     lock (importer)
+                         ProgressBar(i, history.BrowserHistory.Length);
+                 });
             }
         }
 
