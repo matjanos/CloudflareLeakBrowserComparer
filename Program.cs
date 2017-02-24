@@ -17,46 +17,53 @@ namespace ConsoleApplication
             Console.WriteLine("Preparing data...");
             var importer = new Importer(args[0]);
             var history = importer.GetCollectionOfDomains();
+            var leakedHosts = GetLeakedHosts(args[1]);
             var checkedDomains = new ConcurrentDictionary<string, byte>();
+            Console.WriteLine();
+            Console.WriteLine("Data prepared. Started Processing...");
+
             using (var writer = new StreamWriter(File.Open("result.txt", FileMode.Create)))
             {
-                var orderedLines = new ConcurrentDictionary<string, byte>();
-
-                var lines = File.ReadLines(args[1]).ToArray();
-                int k = 0;
-                foreach (var l in lines)
-                {
-                    orderedLines.TryAdd(l, 0);
-                    if (++k % 10000 == 0)
-                        ProgressBar(k, lines.Length);
-                }
-                Console.WriteLine();
-                Console.WriteLine("Data prepared. Starting Processing.");
                 int i = 0;
                 Parallel.ForEach<HistoryElement, int>(history.BrowserHistory, () => 0, (url, loop, subtotal) =>
-                 {
-                     subtotal++;
-                     var match = Regex.Match(url.url, UrlRegex);
-                     var host = match.Groups[3].Value;
-                     if (checkedDomains.ContainsKey(host))
-                     {
-                         return subtotal;
-                     }
+                         {
+                             subtotal++;
+                             var match = Regex.Match(url.url, UrlRegex);
+                             var host = match.Groups[3].Value;
+                             if (checkedDomains.ContainsKey(host))
+                             {
+                                 return subtotal;
+                             }
 
-                     if (!String.IsNullOrWhiteSpace(host)
-                      && orderedLines.ContainsKey(host))
-                     {
-                         writer.WriteLine($"Address {host}");
-                     }
-                     checkedDomains.TryAdd(host, 0);
-                     return subtotal;
-                 }, (finalResult) =>
-                 {
-                     Interlocked.Add(ref i, finalResult);
-                     lock (importer)
-                         ProgressBar(i, history.BrowserHistory.Length);
-                 });
+                             if (!String.IsNullOrWhiteSpace(host)
+                              && leakedHosts.ContainsKey(host))
+                             {
+                                 writer.WriteLine($"Address {host}");
+                             }
+                             checkedDomains.TryAdd(host, 0);
+                             return subtotal;
+                         }, (finalResult) =>
+                         {
+                             Interlocked.Add(ref i, finalResult);
+                             lock (importer)
+                                 ProgressBar(i, history.BrowserHistory.Length);
+                         });
             }
+        }
+
+        private static ConcurrentDictionary<string,byte> GetLeakedHosts(string path)
+        {
+            var orderedLines = new ConcurrentDictionary<string, byte>();
+            var lines = File.ReadLines(path).ToArray();
+            int k = 0;
+            foreach (var l in lines)
+            {
+                orderedLines.TryAdd(l, 0);
+                if (++k % 10000 == 0)
+                    ProgressBar(k, lines.Length);
+            }
+
+            return orderedLines;
         }
 
         private static void ProgressBar(int progress, int tot)
