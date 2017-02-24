@@ -25,14 +25,14 @@ namespace ConsoleApplication
             using (var writer = new StreamWriter(File.Open("result.txt", FileMode.Create)))
             {
                 int i = 0;
-                Parallel.ForEach<HistoryElement, int>(history.BrowserHistory, () => 0, (url, loop, subtotal) =>
+                Parallel.ForEach<HistoryElement, int>(history.BrowserHistory, () => 0, (url, loop, processedCount) =>
                          {
-                             subtotal++;
+                             processedCount++;
                              var match = Regex.Match(url.url, UrlRegex);
                              var host = match.Groups[3].Value;
                              if (checkedDomains.ContainsKey(host))
                              {
-                                 return subtotal;
+                                 return processedCount;
                              }
 
                              if (!String.IsNullOrWhiteSpace(host)
@@ -41,7 +41,7 @@ namespace ConsoleApplication
                                  writer.WriteLine($"Address {host}");
                              }
                              checkedDomains.TryAdd(host, 0);
-                             return subtotal;
+                             return processedCount;
                          }, (finalResult) =>
                          {
                              Interlocked.Add(ref i, finalResult);
