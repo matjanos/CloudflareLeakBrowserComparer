@@ -1,4 +1,4 @@
-# CloudflareLeakBrowserComparrer
+# CloudflareLeakBrowserComparer
 Do you want to see which websites from the ones that you visit using Google Chrome browser, were affected by huge Cloudflare data leak? Check it!
 
 ## Compilation
