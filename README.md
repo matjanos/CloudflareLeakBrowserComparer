@@ -19,4 +19,4 @@ You need to get dotnet SDK ([from here](https://www.microsoft.com/net/download/c
   dotnet run <BrowserHistory.json> sorted_unique_cf.txt
 ```
 
-In result you will see `result.txt` file, which contains all websites that you have ever visit and which are CloudFlare clients.
+In result you will see `result.txt` file, which contains all websites that you have ever visited and which are CloudFlare clients.
